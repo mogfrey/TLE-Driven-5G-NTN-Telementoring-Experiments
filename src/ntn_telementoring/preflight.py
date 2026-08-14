@@ -32,6 +32,7 @@ def run_preflight(config_path: str | Path) -> dict[str, Any]:
                 f"observer.{field}",
                 observer.get(field) is not None,
                 observer.get(field),
+                required=False,
             )
         )
 
@@ -46,15 +47,6 @@ def run_preflight(config_path: str | Path) -> dict[str, Any]:
             str(oai_root) if oai_root else None,
         )
     )
-
-    build_candidates: list[Path] = []
-    if oai_root:
-        build_candidates.extend(
-            [
-                oai_root / "cmake_targets" / "ran_build" / "build",
-                oai_root / "cmake_targets" / "ran_build" / "build" / "nr-softmodem",
-            ]
-        )
 
     gnb_binary = None
     ue_binary = None
@@ -93,6 +85,7 @@ def run_preflight(config_path: str | Path) -> dict[str, Any]:
         "oai_git": oai_git,
         "notes": [
             "This preflight is read-only and does not start or modify OAI/Open5GS.",
+            "Observer coordinates may be left unset for the first inventory pass but must be frozen before TLE experiments.",
             "chronyc is optional at this stage but required before one-way-latency measurements.",
         ],
     }
