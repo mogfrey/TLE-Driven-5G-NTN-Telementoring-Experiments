@@ -1,0 +1,52 @@
+schema_version: 1
+
+study:
+  name: TLE-Driven-5G-NTN-Telementoring
+  repetitions: 5
+
+observer:
+  # Populate with the actual UE/ground-site coordinates used in the experiment.
+  latitude_deg: null
+  longitude_deg: null
+  altitude_m: null
+
+software:
+  oai_repo: null
+  oai_ref: null
+  open5gs_version: null
+
+hosts:
+  ran:
+    hostname: null
+    address: null
+    oai_root: null
+  core:
+    hostname: null
+    address: null
+  application_peer:
+    hostname: null
+    address: null
+
+interfaces:
+  ue_tunnel: null
+  data_network: null
+
+ntn:
+  architecture: transparent
+  release: 17
+  band: 254
+  bandwidth_mhz: 5
+  subcarrier_spacing_khz: 15
+  elevation_mask_deg: 10
+
+clock_sync:
+  tool: chrony
+  one_way_latency_max_abs_offset_ms: 1.0
+
+paths:
+  private_tle_dir: data/tle
+  results_dir: results
+
+privacy:
+  # This file is a template only. Keep populated config/testbed.yaml untracked.
+  public_template: true
