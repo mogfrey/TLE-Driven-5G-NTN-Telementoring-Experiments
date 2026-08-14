@@ -1,0 +1,31 @@
+# Local/private configuration
+config/testbed.yaml
+config/*.local.yaml
+.env
+.env.*
+
+# Results and captured logs
+results/
+raw/
+logs/
+artifacts/
+
+# Private media / TLE snapshots used in final experiments
+media/
+data/tle/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
