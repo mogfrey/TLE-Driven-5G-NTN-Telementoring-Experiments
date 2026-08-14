@@ -1,9 +1,19 @@
 from __future__ import annotations
 
 import argparse
+import json
+from datetime import timedelta
 from pathlib import Path
 
-from .orbit import GroundPoint, generate_trace, load_tle_satellites, parse_utc, select_satellite, write_trace_csv
+from .orbit import (
+    GroundPoint,
+    generate_trace,
+    load_tle_satellites,
+    parse_utc,
+    select_satellite,
+    write_trace_csv,
+)
+from .passes import find_visible_passes, pass_to_dict, select_geometry_bands
 from .provenance import collect_manifest, write_manifest
 
 
@@ -20,6 +30,18 @@ def build_parser() -> argparse.ArgumentParser:
     provenance.add_argument("--framework-root", default=".")
     provenance.add_argument("--tle-file")
     provenance.add_argument("--output", required=True)
+
+    select_passes = subparsers.add_parser(
+        "select-passes", help="Select high/medium/low passes using the frozen study rule"
+    )
+    select_passes.add_argument("--tle-file", required=True)
+    select_passes.add_argument("--start", required=True)
+    select_passes.add_argument("--horizon-hours", type=float, default=48.0)
+    select_passes.add_argument("--lat", type=float, required=True)
+    select_passes.add_argument("--lon", type=float, required=True)
+    select_passes.add_argument("--alt-m", type=float, default=0.0)
+    select_passes.add_argument("--elevation-mask-deg", type=float, default=10.0)
+    select_passes.add_argument("--output", required=True)
 
     trace = subparsers.add_parser("tle-trace", help="Generate a deterministic TLE orbital trace")
     trace.add_argument("--tle-file", required=True)
@@ -53,6 +75,42 @@ def main() -> None:
         )
         write_manifest(manifest, args.output)
         print(f"wrote provenance manifest: {args.output}")
+        return
+
+    if args.command == "select-passes":
+        start = parse_utc(args.start)
+        end = start + timedelta(hours=args.horizon_hours)
+        satellites = load_tle_satellites(args.tle_file)
+        candidates = find_visible_passes(
+            satellites,
+            observer=_ground_point(args.lat, args.lon, args.alt_m),
+            start_utc=start,
+            end_utc=end,
+            elevation_mask_deg=args.elevation_mask_deg,
+        )
+        selected = select_geometry_bands(candidates)
+        payload = {
+            "selection_rule": {
+                "high": "max elevation >= 75 deg",
+                "medium": "40 <= max elevation <= 60 deg",
+                "low": "20 <= max elevation <= 30 deg",
+                "ordering": "first chronological matching pass",
+            },
+            "search": {
+                "start_utc": start.isoformat().replace("+00:00", "Z"),
+                "end_utc": end.isoformat().replace("+00:00", "Z"),
+                "elevation_mask_deg": args.elevation_mask_deg,
+            },
+            "selected": {label: pass_to_dict(value) for label, value in selected.items()},
+            "candidate_count": len(candidates),
+        }
+        output = Path(args.output)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        missing = {"high", "medium", "low"} - set(selected)
+        print(f"wrote pass selection: {output}")
+        if missing:
+            print(f"warning: no pass found for bands: {', '.join(sorted(missing))}")
         return
 
     if args.command == "tle-trace":
