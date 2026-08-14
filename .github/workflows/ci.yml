@@ -1,0 +1,33 @@
+name: experiment-tooling-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Compile source
+        run: python -m compileall -q src
+
+      - name: CLI smoke test
+        run: |
+          ntn-exp --help
+          ntn-exp provenance --help
+          ntn-exp select-passes --help
+          ntn-exp tle-trace --help
