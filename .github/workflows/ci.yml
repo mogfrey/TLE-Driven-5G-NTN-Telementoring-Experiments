@@ -28,6 +28,7 @@ jobs:
       - name: CLI smoke test
         run: |
           ntn-exp --help
+          ntn-exp preflight --help
           ntn-exp provenance --help
           ntn-exp select-passes --help
           ntn-exp tle-trace --help
