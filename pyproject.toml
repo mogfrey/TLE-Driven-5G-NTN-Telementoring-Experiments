@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ntn-telementoring-experiments"
+version = "0.1.0"
+description = "Reproducibility tooling for TLE-driven Release-17 NTN telementoring experiments"
+requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0,<7",
+  "skyfield>=1.49,<2",
+]
+
+[project.scripts]
+ntn-exp = "ntn_telementoring.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
