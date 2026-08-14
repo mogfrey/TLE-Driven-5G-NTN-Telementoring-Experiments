@@ -14,6 +14,7 @@ from .orbit import (
     write_trace_csv,
 )
 from .passes import find_visible_passes, pass_to_dict, select_geometry_bands
+from .preflight import run_preflight, write_preflight
 from .provenance import collect_manifest, write_manifest
 
 
@@ -24,6 +25,10 @@ def _ground_point(lat: float, lon: float, altitude_m: float) -> GroundPoint:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="ntn-exp")
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    preflight = subparsers.add_parser("preflight", help="Run read-only local lab readiness checks")
+    preflight.add_argument("--config", required=True)
+    preflight.add_argument("--output", required=True)
 
     provenance = subparsers.add_parser("provenance", help="Capture a run provenance manifest")
     provenance.add_argument("--config", required=True)
@@ -66,6 +71,16 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "preflight":
+        report = run_preflight(args.config)
+        write_preflight(report, args.output)
+        status = "READY" if report["ready"] else "NOT READY"
+        print(
+            f"preflight {status}: {report['required_failure_count']} required failures, "
+            f"{report['warning_count']} warnings; wrote {args.output}"
+        )
+        return
 
     if args.command == "provenance":
         manifest = collect_manifest(
