@@ -22,8 +22,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
 
-      - name: Compile source
-        run: python -m compileall -q src
+      - name: Compile source and public scripts
+        run: |
+          python -m compileall -q src
+          python -m py_compile \
+            scripts/continuity_benchmark.py \
+            scripts/reconcile_continuity.py \
+            scripts/plan_continuity_campaign.py
 
       - name: CLI smoke test
         run: |
@@ -32,3 +37,39 @@ jobs:
           ntn-exp provenance --help
           ntn-exp select-passes --help
           ntn-exp tle-trace --help
+          python scripts/continuity_benchmark.py --help
+          python scripts/reconcile_continuity.py --help
+          python scripts/plan_continuity_campaign.py --help
+
+      - name: Continuity reconciliation smoke test
+        run: |
+          mkdir -p /tmp/continuity-smoke
+          python scripts/continuity_benchmark.py \
+            --mode server \
+            --run-id CI_SMOKE \
+            --workload combined \
+            --duration 3 \
+            --bind-ip 127.0.0.1 \
+            --output /tmp/continuity-smoke/receiver.json &
+          server_pid=$!
+          sleep 0.5
+          python scripts/continuity_benchmark.py \
+            --mode client \
+            --run-id CI_SMOKE \
+            --workload combined \
+            --duration 1 \
+            --server 127.0.0.1 \
+            --seed 4101 \
+            --output /tmp/continuity-smoke/sender.json
+          wait "$server_pid"
+          python scripts/reconcile_continuity.py \
+            --sender /tmp/continuity-smoke/sender.json \
+            --receiver /tmp/continuity-smoke/receiver.json \
+            --output /tmp/continuity-smoke/continuity_summary.json
+          python - <<'PY'
+          import json
+          p = json.load(open('/tmp/continuity-smoke/continuity_summary.json'))
+          assert p['aggregate']['mean_session_completion_ratio'] > 0.99
+          for flow in p['flows'].values():
+              assert flow['receiver_prefix_loss_fraction'] == 0.0
+          PY
