@@ -1,0 +1,60 @@
+campaign:
+  name: uct-release17-continuity-validation
+  repetitions: 5
+
+  # Freeze this from an engineering-only B3/native-LEO boundary calibration before
+  # inspecting any final application outcome. It is measured from the same radio
+  # trajectory anchor used by the host runner.
+  expected_service_boundary_s: null
+
+  # Negative control: the safe session must finish this far before the boundary.
+  safe_end_margin_s: 60
+
+  # Boundary exposure: the boundary session must be scheduled to extend at least
+  # this far beyond the boundary.
+  boundary_min_overrun_s: 30
+
+  # Counterbalanced order within each paired repetition.
+  pair_order:
+    - safe_first
+    - boundary_first
+    - safe_first
+    - boundary_first
+    - safe_first
+
+workload:
+  type: combined
+
+  # SAME duration and SAME paired seed are used in both conditions. The only
+  # intended experimental difference is application timing relative to the
+  # Release-17 LEO service boundary.
+  duration_s: 180
+  seed_base: 4100
+  audio_interval_ms: 20
+  control_rate_hz: 100
+  video_fps: 30
+  qos_dscp_enabled: false
+
+  # One-way delay is not required for this continuity study. Leave disabled unless
+  # independent clock validation passes the study threshold.
+  record_one_way_delay: false
+
+conditions:
+  leo_safe:
+    role: negative_control
+    application_launch_offset_s: null
+
+  leo_boundary:
+    role: service_boundary_exposure
+    application_launch_offset_s: null
+
+outputs:
+  results_root: results/uct_continuity_validation
+  required_per_run:
+    - run_manifest.json
+    - sender.json
+    - receiver.json
+    - continuity_summary.json
+    - gnb.log
+    - ue.log
+    - radio_boundary.json
