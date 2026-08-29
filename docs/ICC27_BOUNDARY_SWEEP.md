@@ -12,7 +12,7 @@ Scientific question:
 > prefix loss remain insensitive to the resulting terminal truncation?
 
 This is a **service-continuity/failure-boundary** experiment. It does not evaluate
-application usability/AUSW, perceptual quality, or Málaga data.
+application usability/AUSW or perceptual quality.
 
 ## Frozen primary design
 
@@ -197,5 +197,5 @@ The campaign is designed to support:
 5. final application receive time relative to the service boundary and T310;
 6. an optional fixed-slope hinge description if supported by the observed data.
 
-The statistical unit is the run. The three packets/flows inside a run are not
+The statistical unit is the run. The three application flows inside a run are not
 independent repetitions.
