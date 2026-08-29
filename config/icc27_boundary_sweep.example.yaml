@@ -1,0 +1,74 @@
+campaign:
+  name: uct-icc27-boundary-sweep
+  repetitions: 3
+  replacement_limit_per_slot: 1
+
+calibration:
+  # Fill these with three engineering-only boundary measurements, in seconds from
+  # the same radio anchor used by the final-run orchestrator. Do not inspect final
+  # application outcomes before freezing this file.
+  boundary_times_s:
+    - null
+    - null
+    - null
+  statistic: median
+  max_spread_s: 0.10
+
+workload:
+  type: combined
+  duration_s: 180
+  audio_interval_ms: 20
+  control_rate_hz: 100
+  video_fps: 30
+  qos_dscp_enabled: false
+  record_one_way_delay: false
+  receiver_guard_s: 45
+
+seed_groups:
+  - label: A
+    seed: 7319
+  - label: B
+    seed: 18427
+  - label: C
+    seed: 52931
+
+placements:
+  - id: P1
+    code: M30
+    intended_end_offset_s: -30
+  - id: P2
+    code: M15
+    intended_end_offset_s: -15
+  - id: P3
+    code: M05
+    intended_end_offset_s: -5
+  - id: P4
+    code: Z00
+    intended_end_offset_s: 0
+  - id: P5
+    code: P05
+    intended_end_offset_s: 5
+  - id: P6
+    code: P15
+    intended_end_offset_s: 15
+  - id: P7
+    code: P30
+    intended_end_offset_s: 30
+
+run_order:
+  A: [P1, P2, P3, P4, P5, P6, P7]
+  B: [P7, P6, P5, P4, P3, P2, P1]
+  C: [P4, P1, P7, P2, P6, P3, P5]
+
+outputs:
+  results_root: results/uct_icc27_boundary_sweep
+  required_per_attempt:
+    - run_manifest.json
+    - sender.json
+    - receiver.json
+    - continuity_summary.json
+    - radio_boundary.json
+    - timing_alignment.json
+    - gnb.log
+    - ue.log
+    - qc.json
