@@ -1,0 +1,28 @@
+schema_version: 1
+campaign_id: UCT_PAPER_B_AUSW_CORRECTIVE_V2
+purpose: "Correct the V1 application-harness receiver-lifetime defect without changing the Paper-B scientific hypothesis, frozen AUSW gates, or radio-driven condition design."
+
+corrective_policy:
+  preserve_v1_results_read_only: true
+  v1_results_root: results/paper_b_ausw_validation
+  results_root: results/paper_b_ausw_corrective_v2
+  repeat_radio_calibration: true
+  calibration_repetitions: 3
+  engineering_repetitions_per_condition: 1
+  final_repetitions_per_condition: 5
+  receiver_post_measurement_guard_s: 30.0
+  startup_qc_windows: 5
+  receiver_lifetime_tolerance_s: 1.0
+  require_receiver_lifecycle_artifact: true
+  require_no_premature_receiver_timeout: true
+  require_multimodal_startup_data: true
+
+# Copy the scientific timing/threshold values from the frozen V1 local config.
+# Do NOT modify them to improve the observed outcome.
+source_scientific_config: config/paper_b_usability.local.yaml
+source_thresholds: config/paper_b_usability_thresholds.yaml
+
+# Populate only on the RAN host. Never commit private rclone destinations.
+delivery:
+  require_upload: true
+  rclone_destination: null
