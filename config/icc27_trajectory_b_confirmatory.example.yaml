@@ -1,0 +1,94 @@
+schema_version: 1
+campaign:
+  name: uct-icc27-trajectory-b-confirmatory
+  paper: A
+  target: IEEE ICC 2027
+  valid_runs_required: 18
+  replacement_limit_per_slot: 1
+
+scientific_design:
+  description: "Independent second-geometry confirmation of the Paper-A NTN boundary characteristic"
+  statistical_unit: run
+  geometry_role: confirmatory_second_geometry
+  placements_s: [-5.0, 0.0, 5.0]
+  seed_groups:
+    - {label: A, seed: 41011}
+    - {label: B, seed: 41023}
+    - {label: C, seed: 41039}
+    - {label: D, seed: 41047}
+    - {label: E, seed: 41057}
+    - {label: F, seed: 41077}
+  run_order:
+    A: [M05, Z00, P05]
+    B: [P05, Z00, M05]
+    C: [Z00, M05, P05]
+    D: [Z00, P05, M05]
+    E: [M05, P05, Z00]
+    F: [P05, M05, Z00]
+
+calibration:
+  repetitions: 3
+  boundary_times_s: [null, null, null]
+  statistic: median
+  max_spread_s: 0.10
+  boundary_signature_regex: "Timer T310 expired"
+  application_outcomes_must_not_be_inspected_before_freeze: true
+
+workload:
+  script: scripts/bundled_workload.sh
+  profile: bundled_telementoring_v1
+  duration_s: 180.0
+  audio_interval_ms: 20
+  control_rate_hz: 100
+  video_fps: 30
+  qos_dscp_enabled: false
+  record_one_way_delay: false
+  shsc_enabled: false
+
+integrity_gate:
+  required: true
+  evaluate_immediately_before_application_launch: true
+  require_rrc_established: true
+  require_pdu_session: true
+  require_gtp_tunnel: true
+  reject_unrecovered_prelaunch_release: true
+  require_oai_processes_alive: true
+  require_ue_tunnel: true
+  require_application_path_ping: true
+  require_anchor_valid: true
+
+confirmatory_analysis:
+  primary_directional_expectations:
+    - "whole-session delivery at M05 is greater than or equal to Z00"
+    - "whole-session delivery at Z00 is greater than or equal to P05"
+    - "receiver-prefix loss remains insensitive to any terminal suffix"
+    - "application cutoff precedes T310 and remains near radio-failure onset"
+  sign_test_pairs: 6
+  minimum_two_sided_sign_test_p_if_unanimous: 0.03125
+  no_model_refitting_to_choose_hypotheses: true
+
+outputs:
+  results_root: results/uct_icc27_trajectory_b_confirmatory
+  required_per_attempt:
+    - run_manifest.json
+    - treatment_integrity.json
+    - sender.json
+    - receiver.json
+    - continuity_summary.json
+    - radio_boundary.json
+    - timing_alignment.json
+    - gnb.log
+    - ue.log
+    - qc.json
+
+lab:
+  # Populate only in config/icc27_trajectory_b_confirmatory.local.yaml on the RAN host.
+  # Never commit private infrastructure details or credentials.
+  oai_root: null
+  gnb_config: null
+  ue_config: null
+  ue_tunnel: null
+  remote_application_ip: null
+  geometry_id: null
+  geometry_description: null
+  rclone_destination: null
