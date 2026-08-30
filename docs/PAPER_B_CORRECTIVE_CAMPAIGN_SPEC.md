@@ -26,35 +26,22 @@ Keep unchanged from V1 unless a genuine laboratory-interface incompatibility mak
 
 ## Required receiver-lifetime fix
 
-The audio receivers may be armed before the measurement gate, but their watchdog/timeout budget MUST NOT begin consuming the 180 s measurement lifetime before the measurement gate.
+The audio receivers may be armed before the measurement gate, but their watchdog/timeout budget MUST NOT begin consuming the intended observation lifetime before the measurement gate.
+
+For NOMINAL and DEGRADED_CONNECTED, the required observation lifetime is the full 180 s application interval because both conditions are intended to remain RRC-connected through workload end.
+
+For NEAR_FAILURE, the application intentionally crosses the independently measured T310 boundary before workload end. Instrumentation validity therefore requires the receiver harness to remain observable through the independently measured service boundary, not necessarily through the full 180 s after service has intentionally failed. This shorter required lifetime must be derived solely from the run's radio timing (T310 relative to application start) and never from application/AUSW outcomes. A genuine premature receiver timeout remains invalid under every condition.
 
 Preferred implementation:
 
 1. Start receivers and make them ready before the gate.
 2. Wait for `WORKLOAD_START_GATE`.
-3. From the gate time, allow the full 180 s measurement interval.
-4. Only after measurement end plus a post-measurement guard (default 30 s) may a cleanup watchdog terminate a receiver that has not exited naturally.
+3. From the gate time, start the receiver observation watchdog.
+4. For NOMINAL / DEGRADED_CONNECTED, require the full 180 s interval.
+5. For NEAR_FAILURE, require observation through the independently measured T310 boundary; post-boundary receiver termination caused by the positive-control service failure is not itself an instrumentation defect.
+6. Only after the required observation interval plus a cleanup guard may a cleanup watchdog terminate a receiver that remains blocked.
 
-Equivalent implementations are acceptable only if they prove the receiver process remained alive through the entire intended measurement interval.
-
-Write `application/receiver_lifecycle.json` with at least:
-
-```json
-{
-  "audio_uplink": {
-    "wall_runtime_s": 181.2,
-    "premature_timeout": false,
-    "exit_reason": "normal_or_post_measurement_cleanup"
-  },
-  "audio_downlink": {
-    "wall_runtime_s": 181.0,
-    "premature_timeout": false,
-    "exit_reason": "normal_or_post_measurement_cleanup"
-  }
-}
-```
-
-`wall_runtime_s` must be measured relative to the measurement gate for QC purposes, not merely from pre-gate process creation.
+Write `application/receiver_lifecycle.json` with gate-relative lifetime, timeout state, exit reason and exit code.
 
 ## Strict instrumentation QC
 
@@ -64,10 +51,12 @@ A run is instrumentation-invalid if any of these occur:
 
 - `run_status.json` does not report pass;
 - audio receiver lifecycle artifact is missing;
-- either audio receiver dies before the measurement interval ends;
-- a receiver is killed by a timeout whose deadline occurred before measurement end;
+- either audio receiver dies before the condition-specific required observation interval;
+- a receiver is killed by a genuinely premature timeout;
 - the first five complete post-warm-up windows show no traffic for any one of video, audio UL, audio DL, or telestration;
 - no application data are observed anywhere in the run.
+
+The checker defaults to the full duration. A shorter `--required-lifetime-s` may be supplied only for the predeclared NEAR_FAILURE positive control and must be derived solely from the independently measured radio boundary.
 
 These checks are independent of whether AUSW supports the hypothesis.
 
@@ -83,7 +72,7 @@ A valid run that is fully usable in DEGRADED_CONNECTED remains a VALID NEGATIVE 
 6. Run 3 fresh radio-only calibrations.
 7. Freeze V2 plan and hashes before inspecting application outcomes.
 8. Run exactly 1 engineering run per condition.
-9. If engineering instrumentation QC fails, fix instrumentation only and restart engineering validation. Do not retime conditions to force an AUSW result.
+9. If engineering instrumentation QC fails, diagnose whether the cause is a real instrumentation fault or a condition-aware QC defect. Fix only instrumentation/QC semantics before any final runs; document the correction. Do not retime conditions to force an AUSW result.
 10. Run 5 valid final repetitions per condition under the unattended tmux supervisor.
 11. Preserve all physical attempts; replace only instrumentation/lab-invalid attempts.
 12. Analyze using the run as the statistical unit.
