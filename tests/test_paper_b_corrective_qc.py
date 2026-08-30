@@ -14,7 +14,7 @@ def write_json(path: Path, value):
 def write_windows(path: Path, n=5, alive=True):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w") as f:
-        for i in range(n):
+        for _ in range(n):
             v = 1.0 if alive else 0.0
             f.write(json.dumps({
                 "data_plane_alive": alive,
@@ -41,6 +41,7 @@ def base_run(tmp_path: Path):
 def test_valid_corrective_run(tmp_path):
     report = evaluate(base_run(tmp_path), 180.0, 5, 1.0)
     assert report["instrumentation_valid"] is True
+    assert report["required_receiver_observation_lifetime_s"] == 180.0
     assert report["scientific_outcome_used_for_qc"] is False
 
 
@@ -63,13 +64,35 @@ def test_zero_startup_data_fails(tmp_path):
     assert "no_application_data_observed" in report["reasons"]
 
 
-def test_short_receiver_lifetime_fails(tmp_path):
+def test_short_receiver_lifetime_fails_full_duration_conditions(tmp_path):
     run = base_run(tmp_path)
     write_json(run / "application/receiver_lifecycle.json", {
-        "audio_uplink": {"wall_runtime_s": 164.5, "premature_timeout": True},
-        "audio_downlink": {"wall_runtime_s": 165.0, "premature_timeout": True},
+        "audio_uplink": {"wall_runtime_s": 164.5, "premature_timeout": False},
+        "audio_downlink": {"wall_runtime_s": 165.0, "premature_timeout": False},
     })
     report = evaluate(run, 180.0, 5, 1.0)
     assert report["instrumentation_valid"] is False
     assert "receiver_lifetime_short:audio_uplink" in report["reasons"]
     assert "receiver_lifetime_short:audio_downlink" in report["reasons"]
+
+
+def test_near_failure_can_use_radio_boundary_observation_interval(tmp_path):
+    run = base_run(tmp_path)
+    write_json(run / "application/receiver_lifecycle.json", {
+        "audio_uplink": {"wall_runtime_s": 150.2, "premature_timeout": False, "exit_reason": "condition_induced_service_loss"},
+        "audio_downlink": {"wall_runtime_s": 150.0, "premature_timeout": False, "exit_reason": "condition_induced_service_loss"},
+    })
+    report = evaluate(run, 180.0, 5, 1.0, required_lifetime_s=149.7)
+    assert report["instrumentation_valid"] is True
+    assert report["required_receiver_observation_lifetime_s"] == 149.7
+
+
+def test_premature_timeout_still_fails_with_shorter_required_interval(tmp_path):
+    run = base_run(tmp_path)
+    write_json(run / "application/receiver_lifecycle.json", {
+        "audio_uplink": {"wall_runtime_s": 150.2, "premature_timeout": True},
+        "audio_downlink": {"wall_runtime_s": 150.0, "premature_timeout": False},
+    })
+    report = evaluate(run, 180.0, 5, 1.0, required_lifetime_s=149.7)
+    assert report["instrumentation_valid"] is False
+    assert "premature_receiver_timeout:audio_uplink" in report["reasons"]
