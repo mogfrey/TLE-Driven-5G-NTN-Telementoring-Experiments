@@ -1,0 +1,54 @@
+schema_version: 1
+campaign_id: UCT_PAPER_B_AUSW_V1
+scientific_question: "When does the multimodal application become unusable while Release-17 NTN connectivity and at least part of the data plane remain available?"
+primary_hypothesis: "In the predeclared degraded-connected interval, the Application-Usable Service Window ends before the data-plane window and before the RRC service boundary."
+run_is_statistical_unit: true
+clinical_validation_claim: false
+
+workload:
+  script: scripts/bundled_workload.sh
+  profile: bundled_telementoring_v1
+  duration_s: 180.0
+  warmup_s: 10
+  preparation_lead_s: 20.0
+  expected_video_fps: 30.0
+
+campaign:
+  calibration_repetitions: 3
+  repetitions_per_condition: 5
+  inter_run_cooldown_s: 10
+  boundary_spread_limit_s: 5.0
+  boundary_signature_regex: "Timer T310 expired"
+  scheduler_guard_s: 0.25
+  nominal_end_margin_s: 60.0
+  degraded_connected_end_margin_s: 1.0
+  degraded_connected_max_end_margin_s: 5.0
+  near_failure_overrun_s: 30.0
+  paired_seeds: [5201, 5202, 5203, 5204, 5205]
+  confirmatory_min_supporting_repetitions: 4
+  confirmatory_min_gap_s: 0.5
+
+thresholds_file: config/paper_b_usability_thresholds.yaml
+
+lab:
+  # Populate ONLY in config/paper_b_usability.local.yaml on the RAN host.
+  # Codex should derive these from the already-proven UCT local configuration.
+  # Never commit subscriber credentials or private host details.
+  oai_root: null
+  gnb_config: null
+  ue_config: null
+  ue_tunnel: null
+  remote_application_ip: null
+  attach_timeout_s: 120
+  boundary_timeout_s: 900
+  gnb_start_lead_s: 1.0
+
+outputs:
+  results_root: results/paper_b_ausw_validation
+
+# Final artifact delivery is mandatory for the unattended campaign. Codex must
+# populate the destination in the LOCAL config after inspecting `rclone listremotes`
+# and the existing UCT experiment workflow. Do not commit the local destination.
+delivery:
+  require_upload: true
+  rclone_destination: null

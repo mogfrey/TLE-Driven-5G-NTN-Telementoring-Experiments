@@ -1,0 +1,42 @@
+schema_version: 1
+frozen_before_final_outcomes: true
+clinical_validation_claim: false
+windowing:
+  duration_seconds: 1
+  warmup_seconds: 10
+  statistical_unit: run
+  incomplete_final_window: exclude
+primary_application_gates:
+  video_frame_delivery_ratio:
+    direction: lower
+    threshold: 0.99
+    basis: "Engineering operationalization of ITU-T G.1010 video information loss <1%, using generated/decoded frames."
+  audio_uplink_packet_delivery_ratio:
+    direction: lower
+    threshold: 0.97
+    basis: "ITU-T G.1010 conversational voice packet loss <3%."
+  audio_downlink_packet_delivery_ratio:
+    direction: lower
+    threshold: 0.97
+    basis: "ITU-T G.1010 conversational voice packet loss <3%."
+  telestration_ack_delivery_ratio:
+    direction: lower
+    threshold: 1.00
+    basis: "Zero-loss engineering requirement for command/control delivery."
+  telestration_request_ack_rtt_ms:
+    direction: upper
+    threshold: 450.0
+    window_aggregation: maximum
+    basis: "SAGES Project 6 / telementoring reference; RTT is used as a conservative control-response proxy because precise cross-host one-way time is not assumed."
+comparison_windows:
+  rrc_connectivity:
+    source: "UE Timer-T310 boundary relative to radio anchor"
+  data_plane_availability:
+    source: "Observed delivery of at least one application stream in each one-second window"
+definitions:
+  AUSW: "Intersection of complete one-second windows satisfying every primary application gate while RRC remains connected."
+  AUSW_prefix: "Contiguous supported interval beginning at the end of warm-up."
+  connected_but_unusable: "AUSW_prefix ends while RRC is still connected and application data continue to arrive afterwards."
+source_references:
+  - "ITU-T Recommendation G.1010 (11/2001)."
+  - "Bogen EM, Schlachta CM, Ponsky T. Surg Endosc. 2019;33:684-690. DOI 10.1007/s00464-018-06631-8."
