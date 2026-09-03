@@ -1,5 +1,11 @@
 # Paper A — IEEE ICC 2027 Confirmatory Trajectory-B Execution Brief
 
+## Mandatory project execution rule
+
+Before doing anything else, read `docs/CODEX_PROJECT_EXECUTION_RULES.md` in full. Its no-babysitting rule is mandatory and overrides any temptation to wait, poll, tail, watch, sleep, or remain in the Codex session while unattended work progresses.
+
+**After a durable supervisor/watchdog has been launched and its initial PID/status/heartbeat are verified, Codex MUST print the handoff block and EXIT the Codex session immediately.** It must not stay open waiting for geometry validation, calibration, scientific runs, QC, packaging, upload, or checksum verification.
+
 ## Mission
 
 Execute one prospective, independent second-geometry confirmatory campaign for Paper A. The scientific question is whether the continuity characteristic observed in the original UCT Release-17 NTN boundary sweep reproduces on a genuinely different deterministic OAI RFsim LEO geometry.
@@ -81,7 +87,26 @@ Implement only the minimum host-side wiring required to:
 13. upload the final archive to the existing Paper-A ICC27 Google Drive location using the already-configured rclone workflow;
 14. verify the remote SHA-256 after upload.
 
-Do not consume Codex inference while simply waiting for a long scientific run. Launch the supervisor/watchdog as a durable host process (tmux/systemd/nohup as appropriate), write status files, then return concise monitoring commands so a later Codex invocation can inspect progress or diagnose a failure.
+### Absolute no-babysitting handoff
+
+All long-running phases above must be owned by a durable host-side supervisor/watchdog, not by Codex.
+
+Once Codex has:
+
+- launched the supervisor durably (for example via `nohup`, `setsid`, `tmux`, or `systemd`);
+- verified the supervisor process/PID is alive;
+- verified the initial machine-readable status/heartbeat exists and is advancing normally;
+- printed the status path, log path, PID/service/session, and normal-shell inspection commands;
+
+Codex's active work is finished for that invocation.
+
+It MUST then **EXIT THE CODEX SESSION IMMEDIATELY** and return control to the ordinary shell.
+
+Codex MUST NOT execute `watch`, `tail -f`, `journalctl -f`, polling loops, repeated `cat/jq/stat` checks, or long `sleep` commands to observe routine progress. It MUST NOT remain open waiting for engineering validation, calibration, scientific runs, QC, packaging, upload, or checksum verification. Those are supervisor responsibilities.
+
+Monitoring commands may be printed for the human operator, but Codex must not execute them as a waiting strategy.
+
+A later fresh Codex invocation is appropriate only when the supervisor reports a real `FAILED`, `BLOCKED`, or attention-required state, the operator explicitly requests diagnosis, or completed artifacts require reasoning that was not already automated.
 
 ## Confirmatory analysis
 
