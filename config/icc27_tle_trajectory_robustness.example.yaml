@@ -1,0 +1,145 @@
+schema_version: 1
+campaign:
+  name: uct-icc27-tle-trajectory-robustness
+  paper: A
+  target: IEEE ICC 2027
+  valid_runs_required: 27
+  replacement_limit_per_slot: 1
+
+pass_selection:
+  constellation_geometry_source: starlink_tle
+  tle_snapshot_file: null
+  tle_snapshot_sha256: null
+  tle_retrieval_utc: null
+  observer_lat_deg: null
+  observer_lon_deg: null
+  observer_alt_m: null
+  elevation_mask_deg: 10.0
+  initial_search_horizon_h: 48
+  minimum_usable_preboundary_s: 240.0
+  rule: first_chronological_eligible_pass_per_band
+  bands:
+    HIGH:
+      min_max_elevation_deg: 75.0
+      max_max_elevation_deg: 90.0
+      selected_pass_id: null
+      selected_trace_file: null
+      selected_trace_sha256: null
+    MEDIUM:
+      min_max_elevation_deg: 40.0
+      max_max_elevation_deg: 60.0
+      selected_pass_id: null
+      selected_trace_file: null
+      selected_trace_sha256: null
+    LOW:
+      min_max_elevation_deg: 20.0
+      max_max_elevation_deg: 30.0
+      selected_pass_id: null
+      selected_trace_file: null
+      selected_trace_sha256: null
+
+replay:
+  mode: null  # freeze as continuous_epoch or discrete_external before calibration
+  update_period_s: null
+  calibration_spread_rule: "continuous: <=0.10s; discrete: <=max(0.10s,1.25*update_period_s)"
+  tc_netem_as_orbital_model_forbidden: true
+  state_fidelity_required: true
+
+engineering_validation:
+  consecutive_passes_required_per_trace: 3
+  scientific_sender_forbidden: true
+
+calibration:
+  repetitions_per_trace: 3
+  statistic: median
+  boundary_signature_regex: "Timer T310 expired"
+  application_outcomes_must_not_be_inspected_before_freeze: true
+
+scientific_design:
+  description: "Paper-A boundary robustness across three prospectively selected TLE/SGP4 LEO pass geometries"
+  statistical_unit: run
+  placements_s: [-5.0, 0.0, 5.0]
+  pass_seed_groups:
+    HIGH:
+      - {label: HA, seed: 71011}
+      - {label: HB, seed: 71023}
+      - {label: HC, seed: 71039}
+    MEDIUM:
+      - {label: MD, seed: 72011}
+      - {label: ME, seed: 72023}
+      - {label: MF, seed: 72041}
+    LOW:
+      - {label: LG, seed: 73013}
+      - {label: LH, seed: 73027}
+      - {label: LI, seed: 73039}
+  placement_order:
+    HA: [M05, Z00, P05]
+    HB: [P05, Z00, M05]
+    HC: [Z00, M05, P05]
+    MD: [M05, Z00, P05]
+    ME: [P05, Z00, M05]
+    MF: [Z00, M05, P05]
+    LG: [M05, Z00, P05]
+    LH: [P05, Z00, M05]
+    LI: [Z00, M05, P05]
+  block_order: [HA, MD, LG, HB, ME, LH, HC, MF, LI]
+
+workload:
+  script: scripts/bundled_workload.sh
+  profile: bundled_telementoring_v1
+  duration_s: 180.0
+  audio_interval_ms: 20
+  control_rate_hz: 100
+  video_fps: 30
+  qos_dscp_enabled: false
+  record_one_way_delay: false
+  shsc_enabled: false
+
+integrity_gate:
+  required: true
+  evaluate_immediately_before_application_launch: true
+  require_rrc_established: true
+  require_pdu_session: true
+  require_gtp_tunnel: true
+  reject_unrecovered_prelaunch_release: true
+  require_oai_processes_alive: true
+  require_ue_tunnel: true
+  require_application_path_ping: true
+  require_anchor_valid: true
+  require_replay_state_valid: true
+
+confirmatory_analysis:
+  primary_directional_expectations:
+    - "within each pass-seed triplet, whole-session delivery at M05 is greater than or equal to Z00"
+    - "within each pass-seed triplet, whole-session delivery at Z00 is greater than or equal to P05"
+    - "receiver-prefix loss remains separately reported and may remain insensitive to terminal suffix loss"
+    - "application cutoff precedes T310 and remains associated with radio-failure onset"
+  pooled_matched_triplets: 9
+  no_model_refitting_to_choose_hypotheses: true
+  pass_heterogeneity_descriptive_only: true
+
+outputs:
+  results_root: results/uct_icc27_tle_trajectory_robustness
+  required_per_attempt:
+    - run_manifest.json
+    - treatment_integrity.json
+    - sender.json
+    - receiver.json
+    - continuity_summary.json
+    - radio_boundary.json
+    - timing_alignment.json
+    - orbital_trace_reference.json
+    - state_fidelity.json
+    - gnb.log
+    - ue.log
+    - qc.json
+
+lab:
+  # Populate only in config/icc27_tle_trajectory_robustness.local.yaml on the RAN host.
+  # Never commit private infrastructure details or credentials.
+  oai_root: null
+  gnb_config: null
+  ue_config: null
+  ue_tunnel: null
+  remote_application_ip: null
+  rclone_destination: null
